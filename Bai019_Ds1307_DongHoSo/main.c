@@ -508,8 +508,8 @@ void main()
 			do
 			{
 			} while (BTN_ALARM == 0);
-			Hour_setup = 0;
-			Minute_setup = 0;
+			Hour_setup = 24;
+			Minute_setup = 24;
 			while (1)
 			{
 				if (BTN_ALARM == 0)
@@ -662,7 +662,12 @@ void main()
 			}
 		}
 		if ((Hour_setup == Hour) && (Minute_setup == Minute))
+		{
 			LED1 = 1;
+			Delay_ngao(10000000);
+			Hour_setup = 24;
+			Minute_setup = 24;
+		}
 		else
 			LED1 = 0;
 		//Baothuc(Hour_setup, Minute_setup, Hour, Minute_setup);

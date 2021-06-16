@@ -401,11 +401,6 @@
               <FileType>1</FileType>
               <FilePath>..\Lib\Rtc_Ds1307.c</FilePath>
             </File>
-            <File>
-              <FileName>LunarCalendar.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\Lib\LunarCalendar.c</FilePath>
-            </File>
           </Files>
         </Group>
       </Groups>

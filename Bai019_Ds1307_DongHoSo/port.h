@@ -18,7 +18,7 @@ sbit SOFT_I2C_SDA = P1 ^ 1;
 sbit BTN_UP = P3 ^ 0;
 sbit BTN_DOWN = P3 ^ 1;
 sbit BTN_MODE = P3 ^ 2;
-sbit BTN_ALARM  = P3 ^ 3;
+sbit BTN_MOVE  = P3 ^ 3;
 
 
 #endif

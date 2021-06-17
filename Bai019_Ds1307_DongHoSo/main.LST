@@ -1,4 +1,4 @@
-C51 COMPILER V9.60.0.0   MAIN                                                              06/08/2021 16:39:07 PAGE 1   
+C51 COMPILER V9.60.0.0   MAIN                                                              06/17/2021 23:10:56 PAGE 1   
 
 
 C51 COMPILER V9.60.0.0, COMPILATION OF MODULE MAIN
@@ -11,706 +11,772 @@ line level    source
    2          #include "..\lib\Soft_I2c.h"
    3          #include "..\lib\Lcd4.h"
    4          #include "..\lib\Rtc_Ds1307.h"
-   5          #include "..\lib\LunarCalendar.h"
-   6          #include "Port.h"
-   7          #include <pthread.h>
-*** WARNING C318 IN LINE 7 OF main.c: can't open file 'pthread.h'
-   8          
-   9          #define LED P2_1
-  10          #define LED1 P3_7
+   5          #include "Port.h"
+   6          
+   7          #define LED P2_1
+   8          #define LED1 P3_7
+   9          
+  10          unsigned char *code Days[] = {"SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"};
   11          
-  12          unsigned char *code Days[] = {"SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"};
-  13          
-  14          void delay_ms1(unsigned int time)
-  15          {
-  16   1        unsigned int x, y;
-  17   1        for (x = 0; x < time; x++)
-  18   1          for (y = 0; y < 125; y++)
-  19   1          {
-  20   2          }
-  21   1      }
-  22          unsigned int count;
-  23          unsigned int temp;
-  24          unsigned int Hour_setup;
-  25          unsigned int Minute_setup;
-  26          
-  27          void Delay_ngao(unsigned int Time)
-  28          {
-  29   1        while (Time--)
-  30   1          ;
-  31   1      }
-  32          //-----------------
-  33          void print_LCD(unsigned char Hour,
-  34                   unsigned char Minute,
-  35                   unsigned char Second,
-  36                   unsigned char Day,
-  37                   unsigned char Date,
-  38                   unsigned char Month,
-  39                   unsigned char Year)
-  40          {
-  41   1        Lcd_Chr(1, 5, Hour / 10 + 0x30);
-  42   1        Lcd_Chr_Cp(Hour % 10 + 0x30);
-  43   1        Lcd_Chr_Cp(':');
-  44   1        Lcd_Chr_Cp(Minute / 10 + 0x30);
-  45   1        Lcd_Chr_Cp(Minute % 10 + 0x30);
-  46   1        Lcd_Chr_Cp(':');
-  47   1        Lcd_Chr_Cp(Second / 10 + 0x30);
-  48   1        Lcd_Chr_Cp(Second % 10 + 0x30);
-  49   1        Lcd_Out(2, 1, "                ");
-  50   1        Lcd_Out(2, 2, Days[Day - 1]);
-  51   1        Lcd_Chr_Cp(' ');
-  52   1        Lcd_Chr_Cp(Date / 10 + 0x30);
-  53   1        Lcd_Chr_Cp(Date % 10 + 0x30);
-  54   1        Lcd_Chr_Cp('/');
-C51 COMPILER V9.60.0.0   MAIN                                                              06/08/2021 16:39:07 PAGE 2   
+  12          void delay_ms1(unsigned int time)
+  13          {
+  14   1        unsigned int x, y;
+  15   1        for (x = 0; x < time; x++)
+  16   1          for (y = 0; y < 125; y++)
+  17   1          {
+  18   2          }
+  19   1      }
+  20          unsigned int count;
+  21          unsigned int mode_clock;
+  22          unsigned int temp;
+  23          unsigned int Hour_setup;
+  24          unsigned int Minute_setup;
+  25          
+  26          void Delay_ngao(unsigned int Time)
+  27          {
+  28   1        while (Time--)
+  29   1          ;
+  30   1      }
+  31          //-----------------
+  32          void print_LCD(unsigned char Hour,
+  33                   unsigned char Minute,
+  34                   unsigned char Second,
+  35                   unsigned char Day,
+  36                   unsigned char Date,
+  37                   unsigned char Month,
+  38                   unsigned char Year)
+  39          {
+  40   1        Lcd_Chr(1, 5, Hour / 10 + 0x30);
+  41   1        Lcd_Chr_Cp(Hour % 10 + 0x30);
+  42   1        Lcd_Chr_Cp(':');
+  43   1        Lcd_Chr_Cp(Minute / 10 + 0x30);
+  44   1        Lcd_Chr_Cp(Minute % 10 + 0x30);
+  45   1        Lcd_Chr_Cp(':');
+  46   1        Lcd_Chr_Cp(Second / 10 + 0x30);
+  47   1        Lcd_Chr_Cp(Second % 10 + 0x30);
+  48   1        Lcd_Out(2, 1, "                ");
+  49   1        Lcd_Out(2, 2, Days[Day - 1]);
+  50   1        Lcd_Chr_Cp(' ');
+  51   1        Lcd_Chr_Cp(Date / 10 + 0x30);
+  52   1        Lcd_Chr_Cp(Date % 10 + 0x30);
+  53   1        Lcd_Chr_Cp('/');
+  54   1        Lcd_Chr_Cp(Month / 10 + 0x30);
+  55   1        Lcd_Chr_Cp(Month % 10 + 0x30);
+C51 COMPILER V9.60.0.0   MAIN                                                              06/17/2021 23:10:56 PAGE 2   
 
-  55   1        Lcd_Chr_Cp(Month / 10 + 0x30);
-  56   1        Lcd_Chr_Cp(Month % 10 + 0x30);
-  57   1        Lcd_Out_Cp("/20");
-  58   1        Lcd_Chr_Cp(Year / 10 + 0x30);
-  59   1        Lcd_Chr_Cp(Year % 10 + 0x30);
-  60   1      }
-  61          
-  62          void Baothuc(unsigned char Hour_setup,
-  63                 unsigned char Minute_setup,
-  64                 unsigned char Hour,
-  65                 unsigned char Minute)
-  66          {
-  67   1        if (Hour_setup == Hour)
-  68   1          if (Minute_setup == Minute)
-  69   1            LED1 = 1;
-  70   1          else
-  71   1            LED1 = 0;
-  72   1      }
-  73          
-  74          void main()
-  75          {
-  76   1        unsigned char Hour, Minute, Second, Mode, Day, Date, Month, Year, old_second;
-  77   1      
-  78   1        Soft_I2c_Init();
-  79   1        Ds1307_Init();
-  80   1        Lcd_Init();
-  81   1      
-  82   1        count = 0;
-  83   1        //-------------------
-  84   1        //Ds1307_Write_Time(10, 10, 10, 12, 0);
-  85   1        //Ds1307_Init();
-  86   1        // nạp vào xong phải khởi tạo lại
-  87   1      
-  88   1        while (1)
-  89   1        {
-  90   2          //LED = 1;
-  91   2          // doc va hien thi gio
-  92   2          Ds1307_Read_Time(&Hour, &Minute, &Second, &Mode);
-  93   2          Ds1307_Read_Date(&Day, &Date, &Month, &Year);
-  94   2          if (old_second != Second)
-  95   2          {
-  96   3            old_second = Second;
-  97   3            print_LCD(Hour, Minute, Second, Day, Date, Month, Year);
-  98   3          }
-  99   2          LED = 1;
- 100   2      
- 101   2          ///----------------
- 102   2          if (BTN_MODE == 0)
+  56   1        Lcd_Out_Cp("/20");
+  57   1        Lcd_Chr_Cp(Year / 10 + 0x30);
+  58   1        Lcd_Chr_Cp(Year % 10 + 0x30);
+  59   1      }
+  60          
+  61          void Baothuc(unsigned char Hour_setup,
+  62                 unsigned char Minute_setup,
+  63                 unsigned char Hour,
+  64                 unsigned char Minute)
+  65          {
+  66   1        if (Hour_setup == Hour)
+  67   1          if (Minute_setup == Minute)
+  68   1            LED1 = 1;
+  69   1          else
+  70   1            LED1 = 0;
+  71   1      }
+  72          
+  73          void Up(void) interrupt 0 //Khai báo trình phục vụ ngắt ngoài 1
+  74          {
+  75   1        mode_clock++;
+  76   1      }
+  77          
+  78          void main()
+  79          {
+  80   1        unsigned char Hour, Minute, Second, Mode, Day, Date, Month, Year, old_second;
+  81   1        bit am_pm;
+  82   1        BTN_MODE = 1;
+  83   1        EA = 1;
+  84   1        IT0 = 1;
+  85   1        EX0 = 1;
+  86   1        Soft_I2c_Init();
+  87   1        Ds1307_Init();
+  88   1        Lcd_Init();
+  89   1        mode_clock = 0;
+  90   1        count = 0;
+  91   1        //-------------------
+  92   1        //Ds1307_Write_Time(10, 10, 10, 12, 0);
+  93   1        //Ds1307_Init();
+  94   1        // nạp vào xong phải khởi tạo lại
+  95   1      
+  96   1        while (1)
+  97   1        {
+  98   2          //LED = 1;
+  99   2          // doc va hien thi gio
+ 100   2          am_pm = Ds1307_Read_Time(&Hour, &Minute, &Second, &Mode);
+ 101   2          Ds1307_Read_Date(&Day, &Date, &Month, &Year);
+ 102   2          if (old_second != Second)
  103   2          {
- 104   3            Ds1307_Read_Time(&Hour, &Minute, &Second, &Mode);
- 105   3            LED = 0;
- 106   3            //Lcd_Cmd(15);
- 107   3            delay_ms1(15);
- 108   3            do
- 109   3            {
- 110   4            } while (BTN_MODE == 0);
- 111   3            count = 1;
- 112   3            while (1)
- 113   3            {
- 114   4              if (BTN_MODE == 0)
- 115   4              {
- 116   5                delay_ms1(15);
-C51 COMPILER V9.60.0.0   MAIN                                                              06/08/2021 16:39:07 PAGE 3   
+ 104   3            old_second = Second;
+ 105   3            if (Mode == 12)
+ 106   3            {
+ 107   4              if (am_pm == 1)
+ 108   4                Lcd_Out(1, 14, "PM");
+ 109   4              else
+ 110   4                Lcd_Out(1, 14, "AM");
+ 111   4            }
+ 112   3            else
+ 113   3              Lcd_Cmd(_LCD_CLEAR);
+ 114   3            print_LCD(Hour, Minute, Second, Day, Date, Month, Year);
+ 115   3          }
+ 116   2          LED = 0;
+ 117   2      
+C51 COMPILER V9.60.0.0   MAIN                                                              06/17/2021 23:10:56 PAGE 3   
 
- 117   5                if (BTN_MODE == 0)
- 118   5                  count = count + 1;
- 119   5                do
- 120   5                {
- 121   6                } while (BTN_MODE == 0);
- 122   5              }
- 123   4              switch (count)
- 124   4              {
- 125   5              case 1:
- 126   5                while (1)
- 127   5                {
- 128   6                  char old_hour = Hour;
- 129   6                  if (BTN_MODE == 0)
- 130   6                  {
- 131   7                    delay_ms1(15);
- 132   7                    if (BTN_MODE == 0)
- 133   7                      count = count + 1;
- 134   7                    do
- 135   7                    {
- 136   8                    } while (BTN_MODE == 0);
- 137   7                  }
- 138   6                  else if (BTN_DOWN == 0)
- 139   6                  {
- 140   7                    delay_ms1(15);
- 141   7                    do
- 142   7                    {
- 143   8                    } while (BTN_DOWN == 0);
- 144   7                    if ((Hour == 0) && (Mode == 12))
- 145   7                      Hour = 12;
- 146   7                    if ((Hour == 0) && (Mode == 24))
- 147   7                      Hour = 24;
- 148   7                    Hour--;
- 149   7                  }
- 150   6                  else if (BTN_UP == 0)
- 151   6                  {
- 152   7                    delay_ms1(15);
- 153   7                    do
+ 118   2          //Lcd_Cmd(15);
+ 119   2          while (mode_clock > 0)
+ 120   2          {
+ 121   3            LED = 1;
+ 122   3            switch (mode_clock)
+ 123   3            {
+ 124   4            case 1:
+ 125   4              if (BTN_MOVE == 0)
+ 126   4              {
+ 127   5                //Lcd_Cmd(15);
+ 128   5                delay_ms1(15);
+ 129   5                do
+ 130   5                {
+ 131   6                } while (BTN_MOVE == 0);
+ 132   5                count = 1;
+ 133   5                while (mode_clock == 1)
+ 134   5                {
+ 135   6                  if (BTN_MOVE == 0)
+ 136   6                  {
+ 137   7                    delay_ms1(15);
+ 138   7                    if (BTN_MOVE == 0)
+ 139   7                      count = count + 1;
+ 140   7                    do
+ 141   7                    {
+ 142   8                    } while (BTN_MOVE == 0);
+ 143   7                  }
+ 144   6                  switch (count)
+ 145   6                  {
+ 146   7                  case 1:
+ 147   7                    Lcd_Out(1, 5, "__");
+ 148   7                    Delay_ngao(30000);
+ 149   7      
+ 150   7                    Lcd_Chr(1, 5, Hour / 10 + 0x30);
+ 151   7                    Lcd_Chr_Cp(Hour % 10 + 0x30);
+ 152   7                    Delay_ngao(30000);
+ 153   7                    while (count == 1 && mode_clock == 1)
  154   7                    {
- 155   8                    } while (BTN_UP == 0);
- 156   7                    if ((Hour == 11) && (Mode == 12))
- 157   7                      Hour = -1;
- 158   7                    if ((Hour == 23) && (Mode == 24))
- 159   7                      Hour = -1;
- 160   7                    Hour++;
- 161   7                  }
- 162   6                  if (old_hour != Hour)
- 163   6                  {
- 164   7                    old_hour = Hour;
- 165   7                    print_LCD(Hour, Minute, Second, Day, Date, Month, Year);
- 166   7                  }
- 167   6                  //else
- 168   6                  //{
- 169   6                  Lcd_Out(1, 5, "__");
- 170   6                  Delay_ngao(30000);
- 171   6      
- 172   6                  Lcd_Chr(1, 5, Hour / 10 + 0x30);
- 173   6                  Lcd_Chr_Cp(Hour % 10 + 0x30);
- 174   6                  Delay_ngao(30000);
- 175   6                  //}
- 176   6                  if (count != 1)
- 177   6                    break;
- 178   6                }
-C51 COMPILER V9.60.0.0   MAIN                                                              06/08/2021 16:39:07 PAGE 4   
+ 155   8                      char old_hour = Hour;
+ 156   8                      if (BTN_MOVE == 0)
+ 157   8                      {
+ 158   9                        delay_ms1(15);
+ 159   9                        if (BTN_MOVE == 0)
+ 160   9                          count = count + 1;
+ 161   9                        do
+ 162   9                        {
+ 163  10                        } while (BTN_MOVE == 0);
+ 164   9                      }
+ 165   8                      else if (BTN_DOWN == 0)
+ 166   8                      {
+ 167   9                        delay_ms1(15);
+ 168   9                        do
+ 169   9                        {
+ 170  10                        } while (BTN_DOWN == 0);
+ 171   9                        if ((Hour == 0) && (Mode == 12))
+ 172   9                          Hour = 12;
+ 173   9                        if ((Hour == 0) && (Mode == 24))
+ 174   9                          Hour = 24;
+ 175   9                        Hour--;
+ 176   9                      }
+ 177   8                      else if (BTN_UP == 0)
+ 178   8                      {
+ 179   9                        delay_ms1(15);
+C51 COMPILER V9.60.0.0   MAIN                                                              06/17/2021 23:10:56 PAGE 4   
 
- 179   5                break;
- 180   5              case 2:
- 181   5                while (1)
- 182   5                {
- 183   6                  char old_minute = Minute;
- 184   6                  if (BTN_MODE == 0)
- 185   6                  {
- 186   7                    delay_ms1(15);
- 187   7                    if (BTN_MODE == 0)
- 188   7                      count = count + 1;
- 189   7                    do
- 190   7                    {
- 191   8                    } while (BTN_MODE == 0);
- 192   7                  }
- 193   6                  else if (BTN_DOWN == 0)
- 194   6                  {
- 195   7                    delay_ms1(15);
- 196   7                    do
- 197   7                    {
- 198   8                    } while (BTN_DOWN == 0);
- 199   7                    if (Minute == 0)
- 200   7                      Minute = 60;
- 201   7                    Minute--;
- 202   7                  }
- 203   6                  else if (BTN_UP == 0)
- 204   6                  {
- 205   7                    delay_ms1(15);
- 206   7                    do
- 207   7                    {
- 208   8                    } while (BTN_UP == 0);
- 209   7                    if (Minute == 59)
- 210   7                      Minute = -1;
- 211   7                    Minute++;
- 212   7                  }
- 213   6                  if (old_minute != Minute)
- 214   6                  {
- 215   7                    old_minute = Minute;
- 216   7                    print_LCD(Hour, Minute, Second, Day, Date, Month, Year);
- 217   7                  }
- 218   6                  else
- 219   6                  {
- 220   7                    Lcd_Out(1, 8, "__");
- 221   7                    Delay_ngao(30000);
- 222   7      
- 223   7                    Lcd_Chr(1, 8, Minute / 10 + 0x30);
- 224   7                    Lcd_Chr_Cp(Minute % 10 + 0x30);
- 225   7                    Delay_ngao(30000);
- 226   7                  }
- 227   6                  if (count != 2)
- 228   6                    break;
- 229   6                }
- 230   5                break;
- 231   5              case 3:
- 232   5                while (1)
- 233   5                {
- 234   6                  char old_sec = Second;
- 235   6                  if (BTN_MODE == 0)
- 236   6                  {
- 237   7                    delay_ms1(15);
- 238   7                    if (BTN_MODE == 0)
- 239   7                      count = count + 1;
- 240   7                    do
-C51 COMPILER V9.60.0.0   MAIN                                                              06/08/2021 16:39:07 PAGE 5   
+ 180   9                        do
+ 181   9                        {
+ 182  10                        } while (BTN_UP == 0);
+ 183   9                        if ((Hour == 11) && (Mode == 12))
+ 184   9                          Hour = -1;
+ 185   9                        if ((Hour == 23) && (Mode == 24))
+ 186   9                          Hour = -1;
+ 187   9                        Hour++;
+ 188   9                      }
+ 189   8                      if (old_hour != Hour)
+ 190   8                      {
+ 191   9                        old_hour = Hour;
+ 192   9                        print_LCD(Hour, Minute, Second, Day, Date, Month, Year);
+ 193   9                      }
+ 194   8                      if (count != 1)
+ 195   8                        break;
+ 196   8                    }
+ 197   7                    break;
+ 198   7                  case 2:
+ 199   7                    Lcd_Out(1, 8, "__");
+ 200   7                    Delay_ngao(30000);
+ 201   7      
+ 202   7                    Lcd_Chr(1, 8, Minute / 10 + 0x30);
+ 203   7                    Lcd_Chr_Cp(Minute % 10 + 0x30);
+ 204   7                    Delay_ngao(30000);
+ 205   7                    while (count == 2 && mode_clock == 1)
+ 206   7                    {
+ 207   8                      char old_minute = Minute;
+ 208   8                      if (BTN_MOVE == 0)
+ 209   8                      {
+ 210   9                        delay_ms1(15);
+ 211   9                        if (BTN_MOVE == 0)
+ 212   9                          count = count + 1;
+ 213   9                        do
+ 214   9                        {
+ 215  10                        } while (BTN_MOVE == 0);
+ 216   9                      }
+ 217   8                      else if (BTN_DOWN == 0)
+ 218   8                      {
+ 219   9                        delay_ms1(15);
+ 220   9                        do
+ 221   9                        {
+ 222  10                        } while (BTN_DOWN == 0);
+ 223   9                        if (Minute == 0)
+ 224   9                          Minute = 60;
+ 225   9                        Minute--;
+ 226   9                      }
+ 227   8                      else if (BTN_UP == 0)
+ 228   8                      {
+ 229   9                        delay_ms1(15);
+ 230   9                        do
+ 231   9                        {
+ 232  10                        } while (BTN_UP == 0);
+ 233   9                        if (Minute == 59)
+ 234   9                          Minute = -1;
+ 235   9                        Minute++;
+ 236   9                      }
+ 237   8                      if (old_minute != Minute)
+ 238   8                      {
+ 239   9                        old_minute = Minute;
+ 240   9                        print_LCD(Hour, Minute, Second, Day, Date, Month, Year);
+ 241   9                      }
+C51 COMPILER V9.60.0.0   MAIN                                                              06/17/2021 23:10:56 PAGE 5   
 
- 241   7                    {
- 242   8                    } while (BTN_MODE == 0);
- 243   7                  }
- 244   6                  else if (BTN_DOWN == 0)
- 245   6                  {
- 246   7                    delay_ms1(15);
- 247   7                    do
- 248   7                    {
- 249   8                    } while (BTN_DOWN == 0);
- 250   7                    if (Second == 0)
- 251   7                      Second = 60;
- 252   7                    Second--;
- 253   7                  }
- 254   6                  else if (BTN_UP == 0)
- 255   6                  {
- 256   7                    delay_ms1(15);
- 257   7                    do
- 258   7                    {
- 259   8                    } while (BTN_UP == 0);
- 260   7                    if (Second == 59)
- 261   7                      Second = -1;
- 262   7                    Second++;
- 263   7                  }
- 264   6                  if (old_sec != Second)
- 265   6                  {
- 266   7                    old_sec = Second;
- 267   7                    print_LCD(Hour, Minute, Second, Day, Date, Month, Year);
- 268   7                  }
- 269   6                  else
- 270   6                  {
- 271   7                    Lcd_Out(1, 11, "__");
- 272   7                    Delay_ngao(30000);
- 273   7      
- 274   7                    Lcd_Chr(1, 11, Second / 10 + 0x30);
- 275   7                    Lcd_Chr_Cp(Second % 10 + 0x30);
- 276   7                    Delay_ngao(30000);
- 277   7                  }
- 278   6                  if (count != 3)
- 279   6                    break;
- 280   6                }
- 281   5                break;
- 282   5              case 4:
- 283   5                while (1)
- 284   5                {
- 285   6                  char old_day = Day;
- 286   6                  if (BTN_MODE == 0)
- 287   6                  {
- 288   7                    delay_ms1(15);
- 289   7                    if (BTN_MODE == 0)
- 290   7                      count = count + 1;
- 291   7                    do
- 292   7                    {
- 293   8                    } while (BTN_MODE == 0);
- 294   7                  }
- 295   6                  else if (BTN_DOWN == 0)
- 296   6                  {
- 297   7                    delay_ms1(15);
- 298   7                    do
- 299   7                    {
- 300   8                    } while (BTN_DOWN == 0);
- 301   7                    if (Day == 1)
- 302   7                      Day = 8;
-C51 COMPILER V9.60.0.0   MAIN                                                              06/08/2021 16:39:07 PAGE 6   
+ 242   8                      if (count != 2)
+ 243   8                        break;
+ 244   8                    }
+ 245   7                    break;
+ 246   7                  case 3:
+ 247   7                    Lcd_Out(1, 11, "__");
+ 248   7                    Delay_ngao(30000);
+ 249   7      
+ 250   7                    Lcd_Chr(1, 11, Second / 10 + 0x30);
+ 251   7                    Lcd_Chr_Cp(Second % 10 + 0x30);
+ 252   7                    Delay_ngao(30000);
+ 253   7                    while (count == 3 && mode_clock == 1)
+ 254   7                    {
+ 255   8                      char old_sec = Second;
+ 256   8                      if (BTN_MOVE == 0)
+ 257   8                      {
+ 258   9                        delay_ms1(15);
+ 259   9                        if (BTN_MOVE == 0)
+ 260   9                          count = count + 1;
+ 261   9                        do
+ 262   9                        {
+ 263  10                        } while (BTN_MOVE == 0);
+ 264   9                      }
+ 265   8                      else if (BTN_DOWN == 0)
+ 266   8                      {
+ 267   9                        delay_ms1(15);
+ 268   9                        do
+ 269   9                        {
+ 270  10                        } while (BTN_DOWN == 0);
+ 271   9                        if (Second == 0)
+ 272   9                          Second = 60;
+ 273   9                        Second--;
+ 274   9                      }
+ 275   8                      else if (BTN_UP == 0)
+ 276   8                      {
+ 277   9                        delay_ms1(15);
+ 278   9                        do
+ 279   9                        {
+ 280  10                        } while (BTN_UP == 0);
+ 281   9                        if (Second == 59)
+ 282   9                          Second = -1;
+ 283   9                        Second++;
+ 284   9                      }
+ 285   8                      if (old_sec != Second)
+ 286   8                      {
+ 287   9                        old_sec = Second;
+ 288   9                        print_LCD(Hour, Minute, Second, Day, Date, Month, Year);
+ 289   9                      }
+ 290   8                      if (count != 3)
+ 291   8                        break;
+ 292   8                    }
+ 293   7                    break;
+ 294   7                  case 4:
+ 295   7                    Lcd_Out(2, 2, "___");
+ 296   7                    Delay_ngao(30000);
+ 297   7      
+ 298   7                    Lcd_Out(2, 2, Days[Day - 1]);
+ 299   7                    Lcd_Chr_Cp(' ');
+ 300   7                    Delay_ngao(30000);
+ 301   7                    while (count == 4 && mode_clock == 1)
+ 302   7                    {
+ 303   8                      char old_day = Day;
+C51 COMPILER V9.60.0.0   MAIN                                                              06/17/2021 23:10:56 PAGE 6   
 
- 303   7                    Day--;
- 304   7                  }
- 305   6                  else if (BTN_UP == 0)
- 306   6                  {
- 307   7                    delay_ms1(15);
- 308   7                    do
- 309   7                    {
- 310   8                    } while (BTN_UP == 0);
- 311   7                    if (Day == 7)
- 312   7                      Day = 0;
- 313   7                    Day++;
- 314   7                  }
- 315   6                  if (old_day != Day)
- 316   6                  {
- 317   7                    old_day = Day;
- 318   7                    print_LCD(Hour, Minute, Second, Day, Date, Month, Year);
- 319   7                  }
- 320   6                  else
- 321   6                  {
- 322   7                    Lcd_Out(2, 2, "___");
- 323   7                    Delay_ngao(30000);
- 324   7      
- 325   7                    Lcd_Out(2, 2, Days[Day - 1]);
- 326   7                    Lcd_Chr_Cp(' ');
- 327   7                    Delay_ngao(30000);
- 328   7                  }
- 329   6                  if (count != 4)
- 330   6                    break;
- 331   6                }
- 332   5                break;
- 333   5              case 5:
- 334   5                while (1)
- 335   5                {
- 336   6                  char old_date = Date;
- 337   6                  if (BTN_MODE == 0)
- 338   6                  {
- 339   7                    delay_ms1(15);
- 340   7                    if (BTN_MODE == 0)
- 341   7                      count = count + 1;
- 342   7                    do
- 343   7                    {
- 344   8                    } while (BTN_MODE == 0);
- 345   7                  }
- 346   6                  else if (BTN_DOWN == 0)
- 347   6                  {
- 348   7                    delay_ms1(15);
- 349   7                    do
+ 304   8                      if (BTN_MOVE == 0)
+ 305   8                      {
+ 306   9                        delay_ms1(15);
+ 307   9                        if (BTN_MOVE == 0)
+ 308   9                          count = count + 1;
+ 309   9                        do
+ 310   9                        {
+ 311  10                        } while (BTN_MOVE == 0);
+ 312   9                      }
+ 313   8                      else if (BTN_DOWN == 0)
+ 314   8                      {
+ 315   9                        delay_ms1(15);
+ 316   9                        do
+ 317   9                        {
+ 318  10                        } while (BTN_DOWN == 0);
+ 319   9                        if (Day == 1)
+ 320   9                          Day = 8;
+ 321   9                        Day--;
+ 322   9                      }
+ 323   8                      else if (BTN_UP == 0)
+ 324   8                      {
+ 325   9                        delay_ms1(15);
+ 326   9                        do
+ 327   9                        {
+ 328  10                        } while (BTN_UP == 0);
+ 329   9                        if (Day == 7)
+ 330   9                          Day = 0;
+ 331   9                        Day++;
+ 332   9                      }
+ 333   8                      if (old_day != Day)
+ 334   8                      {
+ 335   9                        old_day = Day;
+ 336   9                        print_LCD(Hour, Minute, Second, Day, Date, Month, Year);
+ 337   9                      }
+ 338   8                      if (count != 4)
+ 339   8                        break;
+ 340   8                    }
+ 341   7                    break;
+ 342   7                  case 5:
+ 343   7                    Lcd_Out(2, 6, "__");
+ 344   7                    Delay_ngao(30000);
+ 345   7      
+ 346   7                    Lcd_Chr(2, 6, Date / 10 + 0x30);
+ 347   7                    Lcd_Chr_Cp(Date % 10 + 0x30);
+ 348   7                    Delay_ngao(30000);
+ 349   7                    while (count == 5 && mode_clock == 1)
  350   7                    {
- 351   8                    } while (BTN_DOWN == 0);
- 352   7                    if (Date == 1)
- 353   7                      Date = 32;
- 354   7                    Date--;
- 355   7                  }
- 356   6                  else if (BTN_UP == 0)
- 357   6                  {
- 358   7                    delay_ms1(15);
- 359   7                    do
- 360   7                    {
- 361   8                    } while (BTN_UP == 0);
- 362   7                    if (Date == 31)
- 363   7                      Date = 0;
- 364   7                    Date++;
-C51 COMPILER V9.60.0.0   MAIN                                                              06/08/2021 16:39:07 PAGE 7   
+ 351   8                      char old_date = Date;
+ 352   8                      if (BTN_MOVE == 0)
+ 353   8                      {
+ 354   9                        delay_ms1(15);
+ 355   9                        if (BTN_MOVE == 0)
+ 356   9                          count = count + 1;
+ 357   9                        do
+ 358   9                        {
+ 359  10                        } while (BTN_MOVE == 0);
+ 360   9                      }
+ 361   8                      else if (BTN_DOWN == 0)
+ 362   8                      {
+ 363   9                        delay_ms1(15);
+ 364   9                        do
+ 365   9                        {
+C51 COMPILER V9.60.0.0   MAIN                                                              06/17/2021 23:10:56 PAGE 7   
 
- 365   7                  }
- 366   6                  if (old_date != Date)
- 367   6                  {
- 368   7                    old_date = Date;
- 369   7                    print_LCD(Hour, Minute, Second, Day, Date, Month, Year);
- 370   7                  }
- 371   6                  else
- 372   6                  {
- 373   7                    Lcd_Out(2, 6, "__");
- 374   7                    Delay_ngao(30000);
- 375   7      
- 376   7                    Lcd_Chr(2, 6, Date / 10 + 0x30);
- 377   7                    Lcd_Chr_Cp(Date % 10 + 0x30);
- 378   7                    Delay_ngao(30000);
- 379   7                  }
- 380   6                  if (count != 5)
- 381   6                    break;
- 382   6                }
- 383   5                break;
- 384   5              case 6:
- 385   5                while (1)
- 386   5                {
- 387   6                  char old_month = Month;
- 388   6                  if (BTN_MODE == 0)
- 389   6                  {
- 390   7                    delay_ms1(15);
- 391   7                    if (BTN_MODE == 0)
- 392   7                      count = count + 1;
- 393   7                    do
- 394   7                    {
- 395   8                    } while (BTN_MODE == 0);
- 396   7                  }
- 397   6                  else if (BTN_DOWN == 0)
- 398   6                  {
- 399   7                    delay_ms1(15);
- 400   7                    do
- 401   7                    {
- 402   8                    } while (BTN_DOWN == 0);
- 403   7                    if (Month == 1)
- 404   7                      Month = 13;
- 405   7                    Month--;
- 406   7                  }
- 407   6                  else if (BTN_UP == 0)
- 408   6                  {
- 409   7                    delay_ms1(15);
- 410   7                    do
- 411   7                    {
- 412   8                    } while (BTN_UP == 0);
- 413   7                    if (Month == 12)
- 414   7                      Month = 0;
- 415   7                    Month++;
- 416   7                  }
- 417   6                  if (old_month != Month)
- 418   6                  {
- 419   7                    old_month = Month;
- 420   7                    print_LCD(Hour, Minute, Second, Day, Date, Month, Year);
- 421   7                  }
- 422   6                  else
- 423   6                  {
- 424   7                    Lcd_Out(2, 9, "__");
- 425   7                    Delay_ngao(30000);
- 426   7      
-C51 COMPILER V9.60.0.0   MAIN                                                              06/08/2021 16:39:07 PAGE 8   
+ 366  10                        } while (BTN_DOWN == 0);
+ 367   9                        if (Date == 1)
+ 368   9                          Date = 32;
+ 369   9                        Date--;
+ 370   9                      }
+ 371   8                      else if (BTN_UP == 0)
+ 372   8                      {
+ 373   9                        delay_ms1(15);
+ 374   9                        do
+ 375   9                        {
+ 376  10                        } while (BTN_UP == 0);
+ 377   9                        if (Date == 31)
+ 378   9                          Date = 0;
+ 379   9                        Date++;
+ 380   9                      }
+ 381   8                      if (old_date != Date)
+ 382   8                      {
+ 383   9                        old_date = Date;
+ 384   9                        print_LCD(Hour, Minute, Second, Day, Date, Month, Year);
+ 385   9                      }
+ 386   8                      if (count != 5)
+ 387   8                        break;
+ 388   8                    }
+ 389   7                    break;
+ 390   7                  case 6:
+ 391   7                    Lcd_Out(2, 9, "__");
+ 392   7                    Delay_ngao(30000);
+ 393   7      
+ 394   7                    Lcd_Chr(2, 9, Month / 10 + 0x30);
+ 395   7                    Lcd_Chr_Cp(Month % 10 + 0x30);
+ 396   7                    Delay_ngao(30000);
+ 397   7                    while (count == 6)
+ 398   7                    {
+ 399   8                      char old_month = Month;
+ 400   8                      if (BTN_MOVE == 0 && mode_clock == 1)
+ 401   8                      {
+ 402   9                        delay_ms1(15);
+ 403   9                        if (BTN_MOVE == 0)
+ 404   9                          count = count + 1;
+ 405   9                        do
+ 406   9                        {
+ 407  10                        } while (BTN_MOVE == 0);
+ 408   9                      }
+ 409   8                      else if (BTN_DOWN == 0)
+ 410   8                      {
+ 411   9                        delay_ms1(15);
+ 412   9                        do
+ 413   9                        {
+ 414  10                        } while (BTN_DOWN == 0);
+ 415   9                        if (Month == 1)
+ 416   9                          Month = 13;
+ 417   9                        Month--;
+ 418   9                      }
+ 419   8                      else if (BTN_UP == 0)
+ 420   8                      {
+ 421   9                        delay_ms1(15);
+ 422   9                        do
+ 423   9                        {
+ 424  10                        } while (BTN_UP == 0);
+ 425   9                        if (Month == 12)
+ 426   9                          Month = 0;
+ 427   9                        Month++;
+C51 COMPILER V9.60.0.0   MAIN                                                              06/17/2021 23:10:56 PAGE 8   
 
- 427   7                    Lcd_Chr(2, 9, Month / 10 + 0x30);
- 428   7                    Lcd_Chr_Cp(Month % 10 + 0x30);
- 429   7                    Delay_ngao(30000);
- 430   7                  }
- 431   6                  if (count != 6)
- 432   6                    break;
- 433   6                }
- 434   5                break;
- 435   5              case 7:
- 436   5                while (1)
- 437   5                {
- 438   6                  char old_year = Year;
- 439   6                  if (BTN_MODE == 0)
- 440   6                  {
- 441   7                    delay_ms1(15);
- 442   7                    if (BTN_MODE == 0)
- 443   7                      count = count + 1;
- 444   7                    do
- 445   7                    {
- 446   8                    } while (BTN_MODE == 0);
- 447   7                  }
- 448   6                  else if (BTN_DOWN == 0)
- 449   6                  {
- 450   7                    delay_ms1(15);
- 451   7                    do
- 452   7                    {
- 453   8                    } while (BTN_DOWN == 0);
- 454   7                    Year--;
- 455   7                  }
- 456   6                  else if (BTN_UP == 0)
- 457   6                  {
- 458   7                    delay_ms1(15);
- 459   7                    do
- 460   7                    {
- 461   8                    } while (BTN_UP == 0);
- 462   7                    Year++;
- 463   7                  }
- 464   6                  if (old_year != Year)
- 465   6                  {
- 466   7                    old_year = Year;
- 467   7                    print_LCD(Hour, Minute, Second, Day, Date, Month, Year);
- 468   7                  }
- 469   6                  else
- 470   6                  {
- 471   7                    Lcd_Out(2, 12, "____");
- 472   7                    Delay_ngao(30000);
- 473   7                    Lcd_Out(2, 12, "20");
- 474   7                    Lcd_Chr_Cp(Year / 10 + 0x30);
- 475   7                    Lcd_Chr_Cp(Year % 10 + 0x30);
- 476   7                    Delay_ngao(30000);
- 477   7                  }
- 478   6                  if (count != 7)
- 479   6                    break;
- 480   6                }
- 481   5                break;
- 482   5              default:
- 483   5                //LED = 1;
- 484   5                //Delay(50000);
- 485   5                break; // Error handling
- 486   5              }
- 487   4              if (count >= 8)
- 488   4              {
-C51 COMPILER V9.60.0.0   MAIN                                                              06/08/2021 16:39:07 PAGE 9   
+ 428   9                      }
+ 429   8                      if (old_month != Month)
+ 430   8                      {
+ 431   9                        old_month = Month;
+ 432   9                        print_LCD(Hour, Minute, Second, Day, Date, Month, Year);
+ 433   9                      }
+ 434   8                      if (count != 6)
+ 435   8                        break;
+ 436   8                    }
+ 437   7                    break;
+ 438   7                  case 7:
+ 439   7                    Lcd_Out(2, 12, "____");
+ 440   7                    Delay_ngao(30000);
+ 441   7                    Lcd_Out(2, 12, "20");
+ 442   7                    Lcd_Chr_Cp(Year / 10 + 0x30);
+ 443   7                    Lcd_Chr_Cp(Year % 10 + 0x30);
+ 444   7                    Delay_ngao(30000);
+ 445   7                    while (count == 7 && mode_clock == 1)
+ 446   7                    {
+ 447   8                      char old_year = Year;
+ 448   8                      if (BTN_MOVE == 0)
+ 449   8                      {
+ 450   9                        delay_ms1(15);
+ 451   9                        if (BTN_MOVE == 0)
+ 452   9                          count = count + 1;
+ 453   9                        do
+ 454   9                        {
+ 455  10                        } while (BTN_MOVE == 0);
+ 456   9                      }
+ 457   8                      else if (BTN_DOWN == 0)
+ 458   8                      {
+ 459   9                        delay_ms1(15);
+ 460   9                        do
+ 461   9                        {
+ 462  10                        } while (BTN_DOWN == 0);
+ 463   9                        Year--;
+ 464   9                      }
+ 465   8                      else if (BTN_UP == 0)
+ 466   8                      {
+ 467   9                        delay_ms1(15);
+ 468   9                        do
+ 469   9                        {
+ 470  10                        } while (BTN_UP == 0);
+ 471   9                        Year++;
+ 472   9                      }
+ 473   8                      if (old_year != Year)
+ 474   8                      {
+ 475   9                        old_year = Year;
+ 476   9                        print_LCD(Hour, Minute, Second, Day, Date, Month, Year);
+ 477   9                      }
+ 478   8                      if (count != 7)
+ 479   8                        break;
+ 480   8                    }
+ 481   7                    break;
+ 482   7                  default:
+ 483   7                    break; // Error handling
+ 484   7                  }
+ 485   6                  if (count >= 8)
+ 486   6                  {
+ 487   7                    mode_clock++;
+ 488   7                    // Ds1307_Write_Time(Hour, Minute, Second, Mode, am_pm);
+ 489   7                    // Ds1307_Write_Date(Day, Date, Month, Year);
+C51 COMPILER V9.60.0.0   MAIN                                                              06/17/2021 23:10:56 PAGE 9   
 
- 489   5                Ds1307_Write_Time(Hour, Minute, Second, 24, 0);
- 490   5                Ds1307_Write_Date(Day, Date, Month, Year);
- 491   5                Ds1307_Init();
- 492   5                break;
- 493   5              }
- 494   4            }
- 495   3          }
- 496   2          //-------------bao thuc -----------
- 497   2          //int temp = 0;
- 498   2          if (BTN_ALARM == 0)
- 499   2          {
- 500   3            Lcd_Cmd(1);
- 501   3            Lcd_Out(1, 1, "CAI DAT BAO THUC");
- 502   3            Lcd_Chr(2, 6, 0 / 10 + 0x30);
- 503   3            Lcd_Chr_Cp(0 % 10 + 0x30);
- 504   3            Lcd_Chr_Cp(':');
- 505   3            Lcd_Chr_Cp(0 / 10 + 0x30);
- 506   3            Lcd_Chr_Cp(0 % 10 + 0x30);
- 507   3            delay_ms1(15);
- 508   3            temp = 1;
- 509   3            do
- 510   3            {
- 511   4            } while (BTN_ALARM == 0);
- 512   3            Hour_setup = 0;
- 513   3            Minute_setup = 0;
- 514   3            while (1)
- 515   3            {
- 516   4              if (BTN_ALARM == 0)
- 517   4              {
- 518   5                delay_ms1(15);
- 519   5                if (BTN_ALARM == 0)
- 520   5                  temp = temp + 1;
- 521   5                do
- 522   5                {
- 523   6                } while (BTN_ALARM == 0);
- 524   5              }
- 525   4              switch (temp)
- 526   4              {
- 527   5              case 1:
- 528   5                Lcd_Out(1, 1, "CAI DAT BAO THUC");
- 529   5                while (1)
- 530   5                {
- 531   6                  char old_Hour_setup = Hour_setup;
- 532   6                  if (BTN_ALARM == 0)
- 533   6                  {
- 534   7                    delay_ms1(15);
- 535   7                    if (BTN_ALARM == 0)
- 536   7                      temp = temp + 1;
- 537   7                    do
- 538   7                    {
- 539   8                    } while (BTN_ALARM == 0);
- 540   7                  }
- 541   6                  else if (BTN_DOWN == 0)
- 542   6                  {
- 543   7                    delay_ms1(15);
- 544   7                    do
- 545   7                    {
- 546   8                    } while (BTN_DOWN == 0);
- 547   7                    if ((Hour_setup == 0) && (Mode == 12))
- 548   7                      Hour_setup = 12;
- 549   7                    if ((Hour_setup == 0) && (Mode == 24))
- 550   7                      Hour_setup = 24;
-C51 COMPILER V9.60.0.0   MAIN                                                              06/08/2021 16:39:07 PAGE 10  
+ 490   7                    // Ds1307_Init();
+ 491   7                    break;
+ 492   7                  }
+ 493   6                }
+ 494   5                if (mode_clock != 1)
+ 495   5                  break;
+ 496   5              }
+ 497   4              break;
+ 498   4            case 2:
+ 499   4              Lcd_Cmd(1);
+ 500   4              Lcd_Out(1, 1, "CAI DAT BAO THUC");
+ 501   4              Lcd_Chr(2, 6, 0 / 10 + 0x30);
+ 502   4              Lcd_Chr_Cp(0 % 10 + 0x30);
+ 503   4              Lcd_Chr_Cp(':');
+ 504   4              Lcd_Chr_Cp(0 / 10 + 0x30);
+ 505   4              Lcd_Chr_Cp(0 % 10 + 0x30);
+ 506   4              delay_ms1(15);
+ 507   4              if (BTN_MOVE == 0)
+ 508   4              {
+ 509   5                // Lcd_Cmd(1);
+ 510   5                // Lcd_Out(1, 1, "CAI DAT BAO THUC");
+ 511   5                // Lcd_Chr(2, 6, 0 / 10 + 0x30);
+ 512   5                // Lcd_Chr_Cp(0 % 10 + 0x30);
+ 513   5                // Lcd_Chr_Cp(':');
+ 514   5                // Lcd_Chr_Cp(0 / 10 + 0x30);
+ 515   5                // Lcd_Chr_Cp(0 % 10 + 0x30);
+ 516   5                delay_ms1(15);
+ 517   5                temp = 1;
+ 518   5                do
+ 519   5                {
+ 520   6                } while (BTN_MOVE == 0);
+ 521   5                Hour_setup = 0;
+ 522   5                Minute_setup = 0;
+ 523   5                while (mode_clock == 2)
+ 524   5                {
+ 525   6                  if (BTN_MOVE == 0)
+ 526   6                  {
+ 527   7                    delay_ms1(15);
+ 528   7                    if (BTN_MOVE == 0)
+ 529   7                      temp = temp + 1;
+ 530   7                    do
+ 531   7                    {
+ 532   8                    } while (BTN_MOVE == 0);
+ 533   7                  }
+ 534   6      
+ 535   6                  switch (temp)
+ 536   6                  {
+ 537   7                  case 1:
+ 538   7                    Lcd_Out(2, 6, "__");
+ 539   7                    Lcd_Chr_Cp(':');
+ 540   7                    Lcd_Chr_Cp(Minute_setup / 10 + 0x30);
+ 541   7                    Lcd_Chr_Cp(Minute_setup % 10 + 0x30);
+ 542   7                    Delay_ngao(30000);
+ 543   7      
+ 544   7                    Lcd_Chr(2, 6, Hour_setup / 10 + 0x30);
+ 545   7                    Lcd_Chr_Cp(Hour_setup % 10 + 0x30);
+ 546   7                    Lcd_Chr_Cp(':');
+ 547   7                    Lcd_Chr_Cp(Minute_setup / 10 + 0x30);
+ 548   7                    Lcd_Chr_Cp(Minute_setup % 10 + 0x30);
+ 549   7                    Delay_ngao(30000);
+ 550   7                    Lcd_Out(1, 1, "CAI DAT BAO THUC");
+ 551   7                    while (temp == 1 && mode_clock == 2)
+C51 COMPILER V9.60.0.0   MAIN                                                              06/17/2021 23:10:56 PAGE 10  
 
- 551   7                    Hour_setup--;
- 552   7                  }
- 553   6                  else if (BTN_UP == 0)
- 554   6                  {
- 555   7                    delay_ms1(15);
- 556   7                    do
- 557   7                    {
- 558   8                    } while (BTN_UP == 0);
- 559   7                    if ((Hour_setup == 11) && (Mode == 12))
- 560   7                      Hour_setup = -1;
- 561   7                    if ((Hour_setup == 23) && (Mode == 24))
- 562   7                      Hour_setup = -1;
- 563   7                    Hour_setup++;
- 564   7                  }
- 565   6                  if (old_Hour_setup != Hour_setup)
- 566   6                  {
- 567   7                    old_Hour_setup = Hour_setup;
- 568   7                    Lcd_Chr(2, 6, Hour_setup / 10 + 0x30);
- 569   7                    Lcd_Chr_Cp(Hour_setup % 10 + 0x30);
- 570   7                    Lcd_Chr_Cp(':');
- 571   7                    Lcd_Chr_Cp(Minute_setup / 10 + 0x30);
- 572   7                    Lcd_Chr_Cp(Minute_setup % 10 + 0x30);
- 573   7                  }
- 574   6                  else
- 575   6                  {
- 576   7                    Lcd_Out(2, 6, "__");
- 577   7                    Lcd_Chr_Cp(':');
- 578   7                    Lcd_Chr_Cp(Minute_setup / 10 + 0x30);
- 579   7                    Lcd_Chr_Cp(Minute_setup % 10 + 0x30);
- 580   7                    Delay_ngao(30000);
- 581   7      
- 582   7                    Lcd_Chr(2, 6, Hour_setup / 10 + 0x30);
- 583   7                    Lcd_Chr_Cp(Hour_setup % 10 + 0x30);
- 584   7                    Lcd_Chr_Cp(':');
- 585   7                    Lcd_Chr_Cp(Minute_setup / 10 + 0x30);
- 586   7                    Lcd_Chr_Cp(Minute_setup % 10 + 0x30);
- 587   7                    Delay_ngao(30000);
- 588   7                  }
- 589   6                  if (temp != 1)
- 590   6                    break;
- 591   6                }
- 592   5                break;
- 593   5              case 2:
- 594   5                Lcd_Out(1, 1, "CAI DAT BAO THUC");
- 595   5                while (1)
- 596   5                {
- 597   6                  char old_Minute_setup = Minute_setup;
- 598   6                  if (BTN_ALARM == 0)
- 599   6                  {
- 600   7                    delay_ms1(15);
- 601   7                    if (BTN_ALARM == 0)
- 602   7                      temp = temp + 1;
- 603   7                    do
- 604   7                    {
- 605   8                    } while (BTN_ALARM == 0);
- 606   7                  }
- 607   6                  else if (BTN_DOWN == 0)
- 608   6                  {
- 609   7                    delay_ms1(15);
- 610   7                    do
- 611   7                    {
- 612   8                    } while (BTN_DOWN == 0);
-C51 COMPILER V9.60.0.0   MAIN                                                              06/08/2021 16:39:07 PAGE 11  
+ 552   7                    {
+ 553   8                      char old_Hour_setup = Hour_setup;
+ 554   8                      if (BTN_MOVE == 0)
+ 555   8                      {
+ 556   9                        delay_ms1(15);
+ 557   9                        if (BTN_MOVE == 0)
+ 558   9                          temp = temp + 1;
+ 559   9                        do
+ 560   9                        {
+ 561  10                        } while (BTN_MOVE == 0);
+ 562   9                      }
+ 563   8                      else if (BTN_DOWN == 0)
+ 564   8                      {
+ 565   9                        delay_ms1(15);
+ 566   9                        do
+ 567   9                        {
+ 568  10                        } while (BTN_DOWN == 0);
+ 569   9                        if ((Hour_setup == 0) && (Mode == 12))
+ 570   9                          Hour_setup = 12;
+ 571   9                        if ((Hour_setup == 0) && (Mode == 24))
+ 572   9                          Hour_setup = 24;
+ 573   9                        Hour_setup--;
+ 574   9                      }
+ 575   8                      else if (BTN_UP == 0)
+ 576   8                      {
+ 577   9                        delay_ms1(15);
+ 578   9                        do
+ 579   9                        {
+ 580  10                        } while (BTN_UP == 0);
+ 581   9                        if ((Hour_setup == 11) && (Mode == 12))
+ 582   9                          Hour_setup = -1;
+ 583   9                        if ((Hour_setup == 23) && (Mode == 24))
+ 584   9                          Hour_setup = -1;
+ 585   9                        Hour_setup++;
+ 586   9                      }
+ 587   8                      if (old_Hour_setup != Hour_setup)
+ 588   8                      {
+ 589   9                        old_Hour_setup = Hour_setup;
+ 590   9                        Lcd_Chr(2, 6, Hour_setup / 10 + 0x30);
+ 591   9                        Lcd_Chr_Cp(Hour_setup % 10 + 0x30);
+ 592   9                        Lcd_Chr_Cp(':');
+ 593   9                        Lcd_Chr_Cp(Minute_setup / 10 + 0x30);
+ 594   9                        Lcd_Chr_Cp(Minute_setup % 10 + 0x30);
+ 595   9                      }
+ 596   8                    }
+ 597   7                    break;
+ 598   7                  case 2:
+ 599   7                    Lcd_Chr(2, 6, Hour_setup / 10 + 0x30);
+ 600   7                    Lcd_Chr_Cp(Hour_setup % 10 + 0x30);
+ 601   7                    Lcd_Chr_Cp(':');
+ 602   7                    Lcd_Out(2, 9, "__");
+ 603   7                    Delay_ngao(30000);
+ 604   7      
+ 605   7                    Lcd_Chr(2, 6, Hour_setup / 10 + 0x30);
+ 606   7                    Lcd_Chr_Cp(Hour_setup % 10 + 0x30);
+ 607   7                    Lcd_Chr_Cp(':');
+ 608   7                    Lcd_Chr_Cp(Minute_setup / 10 + 0x30);
+ 609   7                    Lcd_Chr_Cp(Minute_setup % 10 + 0x30);
+ 610   7                    Delay_ngao(30000);
+ 611   7                    Lcd_Out(1, 1, "CAI DAT BAO THUC");
+ 612   7                    while (temp == 2 && mode_clock == 2)
+ 613   7                    {
+C51 COMPILER V9.60.0.0   MAIN                                                              06/17/2021 23:10:56 PAGE 11  
 
- 613   7                    if (Minute_setup == 0)
- 614   7                      Minute_setup = 60;
- 615   7                    Minute_setup--;
- 616   7                  }
- 617   6                  else if (BTN_UP == 0)
- 618   6                  {
- 619   7                    delay_ms1(15);
- 620   7                    do
- 621   7                    {
- 622   8                    } while (BTN_UP == 0);
- 623   7                    if (Minute_setup == 59)
- 624   7                      Minute_setup = -1;
- 625   7                    Minute_setup++;
- 626   7                  }
- 627   6                  if (old_Minute_setup != Minute_setup)
- 628   6                  {
- 629   7                    old_Minute_setup = Minute_setup;
- 630   7                    Lcd_Chr(2, 6, Hour_setup / 10 + 0x30);
- 631   7                    Lcd_Chr_Cp(Hour_setup % 10 + 0x30);
- 632   7                    Lcd_Chr_Cp(':');
- 633   7                    Lcd_Chr_Cp(Minute_setup / 10 + 0x30);
- 634   7                    Lcd_Chr_Cp(Minute_setup % 10 + 0x30);
- 635   7                  }
- 636   6                  else
- 637   6                  {
- 638   7                    Lcd_Chr(2, 6, Hour_setup / 10 + 0x30);
- 639   7                    Lcd_Chr_Cp(Hour_setup % 10 + 0x30);
- 640   7                    Lcd_Chr_Cp(':');
- 641   7                    Lcd_Out(2, 9, "__");
- 642   7                    Delay_ngao(30000);
- 643   7      
- 644   7                    Lcd_Chr(2, 6, Hour_setup / 10 + 0x30);
- 645   7                    Lcd_Chr_Cp(Hour_setup % 10 + 0x30);
- 646   7                    Lcd_Chr_Cp(':');
- 647   7                    Lcd_Chr_Cp(Minute_setup / 10 + 0x30);
- 648   7                    Lcd_Chr_Cp(Minute_setup % 10 + 0x30);
- 649   7                    Delay_ngao(30000);
- 650   7                  }
- 651   6                  if (temp != 2)
- 652   6                  {
- 653   7                    Lcd_Cmd(1);
- 654   7                    break;
- 655   7                  }
- 656   6                }
- 657   5                break;
- 658   5              default:
- 659   5                break;
- 660   5              }
- 661   4              if (temp >= 3)
- 662   4                break;
- 663   4            }
- 664   3          }
- 665   2          if ((Hour_setup == Hour) && (Minute_setup == Minute))
- 666   2            LED1 = 1;
- 667   2          else
- 668   2            LED1 = 0;
- 669   2          //Baothuc(Hour_setup, Minute_setup, Hour, Minute_setup);
- 670   2        }
- 671   1      }
+ 614   8                      char old_Minute_setup = Minute_setup;
+ 615   8                      if (BTN_MOVE == 0)
+ 616   8                      {
+ 617   9                        delay_ms1(15);
+ 618   9                        if (BTN_MOVE == 0)
+ 619   9                          temp = temp + 1;
+ 620   9                        do
+ 621   9                        {
+ 622  10                        } while (BTN_MOVE == 0);
+ 623   9                      }
+ 624   8                      else if (BTN_DOWN == 0)
+ 625   8                      {
+ 626   9                        delay_ms1(15);
+ 627   9                        do
+ 628   9                        {
+ 629  10                        } while (BTN_DOWN == 0);
+ 630   9                        if (Minute_setup == 0)
+ 631   9                          Minute_setup = 60;
+ 632   9                        Minute_setup--;
+ 633   9                      }
+ 634   8                      else if (BTN_UP == 0)
+ 635   8                      {
+ 636   9                        delay_ms1(15);
+ 637   9                        do
+ 638   9                        {
+ 639  10                        } while (BTN_UP == 0);
+ 640   9                        if (Minute_setup == 59)
+ 641   9                          Minute_setup = -1;
+ 642   9                        Minute_setup++;
+ 643   9                      }
+ 644   8                      if (old_Minute_setup != Minute_setup)
+ 645   8                      {
+ 646   9                        old_Minute_setup = Minute_setup;
+ 647   9                        Lcd_Chr(2, 6, Hour_setup / 10 + 0x30);
+ 648   9                        Lcd_Chr_Cp(Hour_setup % 10 + 0x30);
+ 649   9                        Lcd_Chr_Cp(':');
+ 650   9                        Lcd_Chr_Cp(Minute_setup / 10 + 0x30);
+ 651   9                        Lcd_Chr_Cp(Minute_setup % 10 + 0x30);
+ 652   9                      }
+ 653   8                      if (temp != 2)
+ 654   8                      {
+ 655   9                        Lcd_Cmd(1);
+ 656   9                        break;
+ 657   9                      }
+ 658   8                    }
+ 659   7                    break;
+ 660   7                  default:
+ 661   7                    break;
+ 662   7                  }
+ 663   6                  if (temp >= 3)
+ 664   6                  {
+ 665   7                    mode_clock++;
+ 666   7                    break;
+ 667   7                  }
+ 668   6                }
+ 669   5                if (mode_clock != 2)
+ 670   5                  break;
+ 671   5              }
+ 672   4              break;
+ 673   4            case 3:
+ 674   4              Lcd_Cmd(1);
+ 675   4              Lcd_Out(1, 2, "DONG HO BAM GIO");
+C51 COMPILER V9.60.0.0   MAIN                                                              06/17/2021 23:10:56 PAGE 12  
+
+ 676   4              Lcd_Chr(2, 6, 0 / 10 + 0x30);
+ 677   4              Lcd_Chr_Cp(0 % 10 + 0x30);
+ 678   4              Lcd_Chr_Cp(':');
+ 679   4              Lcd_Chr_Cp(0 / 10 + 0x30);
+ 680   4              Lcd_Chr_Cp(0 % 10 + 0x30);
+ 681   4              delay_ms1(15);
+ 682   4              while (mode_clock == 3)
+ 683   4              {
+ 684   5              }
+ 685   4              break;
+ 686   4            default:
+ 687   4              //LED = 1;
+ 688   4              //Delay(50000);
+ 689   4              break; // Error handling
+ 690   4            }
+ 691   3            if (mode_clock >= 4)
+ 692   3            {
+ 693   4              Ds1307_Write_Time(Hour, Minute, Second, Mode, am_pm);
+ 694   4              Ds1307_Write_Date(Day, Date, Month, Year);
+ 695   4              Ds1307_Init();
+ 696   4              mode_clock = 0;
+ 697   4              break;
+ 698   4            }
+ 699   3          }
+ 700   2          //==================
+ 701   2          if (BTN_MOVE == 0)
+ 702   2          {
+ 703   3            LED = 0;
+ 704   3            delay_ms1(15);
+ 705   3            if (BTN_MOVE == 0)
+ 706   3            {
+ 707   4              if (Mode == 12)
+ 708   4              {
+ 709   5                Hour = Hour + 12;
+ 710   5                Mode = 24;
+ 711   5              }
+ 712   4              else
+ 713   4              {
+ 714   5                if (Hour >= 12)
+ 715   5                  Hour = Hour - 12;
+ 716   5                Mode = 12;
+ 717   5              }
+ 718   4              Ds1307_Write_Time(Hour, Minute, Second, Mode, am_pm);
+ 719   4            }
+ 720   3            do
+ 721   3            {
+ 722   4            } while (BTN_MOVE == 0);
+ 723   3          }
+ 724   2      
+ 725   2          if ((Hour_setup == Hour) && (Minute_setup == Minute))
+ 726   2          {
+ 727   3            LED1 = 1;
+ 728   3            Delay_ngao(10000000);
+ 729   3            Hour_setup = 24;
+ 730   3            Minute_setup = 24;
+ 731   3          }
+ 732   2          else
+ 733   2            LED1 = 0;
+ 734   2          //Baothuc(Hour_setup, Minute_setup, Hour, Minute_setup);
+ 735   2        }
+ 736   1      }
+
+C51 COMPILER V9.60.0.0   MAIN                                                              06/17/2021 23:10:56 PAGE 13  
 
 
 MODULE INFORMATION:   STATIC OVERLAYABLE
-C51 COMPILER V9.60.0.0   MAIN                                                              06/08/2021 16:39:07 PAGE 12  
-
-   CODE SIZE        =   2561    ----
-   CONSTANT SIZE    =    102    ----
+   CODE SIZE        =   3037    ----
+   CONSTANT SIZE    =    124    ----
    XDATA SIZE       =   ----    ----
    PDATA SIZE       =   ----    ----
-   DATA SIZE        =      8      21
+   DATA SIZE        =     10      21
    IDATA SIZE       =   ----    ----
-   BIT SIZE         =   ----    ----
+   BIT SIZE         =   ----       1
    EDATA SIZE       =   ----    ----
    HDATA SIZE       =   ----    ----
    XDATA CONST SIZE =   ----    ----
@@ -718,4 +784,4 @@ MODULE INFORMATION:   STATIC OVERLAYABLE
 END OF MODULE INFORMATION.
 
 
-C51 COMPILATION COMPLETE.  1 WARNING(S),  0 ERROR(S)
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

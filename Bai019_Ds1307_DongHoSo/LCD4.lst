@@ -1,4 +1,8 @@
+<<<<<<< HEAD
 C51 COMPILER V9.60.0.0   LCD4                                                              06/17/2021 23:10:57 PAGE 1   
+=======
+C51 COMPILER V9.60.0.0   LCD4                                                              06/16/2021 22:41:46 PAGE 1   
+>>>>>>> 3ee300c1f9e4dad49057a9c8ba7e4389ff8675df
 
 
 C51 COMPILER V9.60.0.0, COMPILATION OF MODULE LCD4
@@ -62,7 +66,11 @@ line level    source
   51          /*-------------------------------------*-
   52            Lcd_Write_High_Nibble - Local Function
   53          -*-------------------------------------*/
+<<<<<<< HEAD
 C51 COMPILER V9.60.0.0   LCD4                                                              06/17/2021 23:10:57 PAGE 2   
+=======
+C51 COMPILER V9.60.0.0   LCD4                                                              06/16/2021 22:41:46 PAGE 2   
+>>>>>>> 3ee300c1f9e4dad49057a9c8ba7e4389ff8675df
 
   54          void Lcd_Write_High_Nibble(unsigned char b)
   55          {
@@ -126,7 +134,11 @@ line level    source
  113   1        
  114   1        Delay_ms(20);
  115   1      
+<<<<<<< HEAD
 C51 COMPILER V9.60.0.0   LCD4                                                              06/17/2021 23:10:57 PAGE 3   
+=======
+C51 COMPILER V9.60.0.0   LCD4                                                              06/16/2021 22:41:46 PAGE 3   
+>>>>>>> 3ee300c1f9e4dad49057a9c8ba7e4389ff8675df
 
  116   1        Lcd_Write_Low_Nibble(0x03);
  117   1        LCD_EN = 1;
@@ -190,7 +202,11 @@ line level    source
  175   2            break;
  176   2        }
  177   1      #endif
+<<<<<<< HEAD
 C51 COMPILER V9.60.0.0   LCD4                                                              06/17/2021 23:10:57 PAGE 4   
+=======
+C51 COMPILER V9.60.0.0   LCD4                                                              06/16/2021 22:41:46 PAGE 4   
+>>>>>>> 3ee300c1f9e4dad49057a9c8ba7e4389ff8675df
 
  178   1      }
  179          
@@ -254,7 +270,11 @@ line level    source
  237   1        add = (row==1?0x80:0xC0);
  238   1        add += (column - 1);
  239   1        Lcd_Cmd(add);
+<<<<<<< HEAD
 C51 COMPILER V9.60.0.0   LCD4                                                              06/17/2021 23:10:57 PAGE 5   
+=======
+C51 COMPILER V9.60.0.0   LCD4                                                              06/16/2021 22:41:46 PAGE 5   
+>>>>>>> 3ee300c1f9e4dad49057a9c8ba7e4389ff8675df
 
  240   1        Lcd_Out_Cp(text); 
  241   1      }

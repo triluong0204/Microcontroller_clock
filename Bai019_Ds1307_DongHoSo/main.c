@@ -122,6 +122,8 @@ void main()
 	Hou_CL = 0;
 	Minute_CL = 0;
 	Second_CL = 0;
+	Hour_setup = 0;
+	Minute_setup = 0;
 	TMOD = 0x01;
 	//-------------------
 	//Ds1307_Write_Time(10, 10, 10, 12, 0);
@@ -574,8 +576,6 @@ void main()
 					do
 					{
 					} while (BTN_MOVE == 0);
-					Hour_setup = 0;
-					Minute_setup = 0;
 					while (mode_clock == 2)
 					{
 						if (BTN_MOVE == 0)
@@ -905,12 +905,10 @@ void main()
 		if ((Hour_setup == Hour) && (Minute_setup == Minute))
 		{
 			LED1 = 1;
-			Delay_ngao(10000000);
-			Hour_setup = 24;
-			Minute_setup = 24;
 		}
 		else
 			LED1 = 0;
+
 		//Baothuc(Hour_setup, Minute_setup, Hour, Minute_setup);
 	}
 }
